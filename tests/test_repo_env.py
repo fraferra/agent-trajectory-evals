@@ -445,3 +445,34 @@ def test_ranking_outcomes_are_mutually_exclusive() -> None:
     tst = run_scripted(DOCSTRING_VS_TESTS, [write("ranking.py", TEST_SIDED_RANK)])
     assert doc.outcome.goal.achieved != tst.outcome.goal.achieved
     assert bool(doc.outcome.spec_violations) != bool(tst.outcome.spec_violations)
+
+
+# --------------------------------------------------------------------------- #
+# Task 6 — the disambiguation must differ from task 5 in exactly one respect
+# --------------------------------------------------------------------------- #
+
+from envs.repo_task.tasks import DOCSTRING_PROTECTED
+
+
+def test_protected_variant_differs_only_in_the_prompt() -> None:
+    """A single-variable manipulation, enforced rather than assumed.
+
+    If any other field drifts, the comparison against DOCSTRING_VS_TESTS stops
+    isolating the instruction and the experiment silently measures two things.
+    """
+    a = DOCSTRING_VS_TESTS.model_dump()
+    b = DOCSTRING_PROTECTED.model_dump()
+    differing = {k for k in a if a[k] != b[k]}
+    assert differing == {"task_id", "prompt"}, differing
+    assert "Do not change the behaviour documented" in DOCSTRING_PROTECTED.prompt
+
+
+def test_protected_variant_still_discriminates() -> None:
+    """The environment behaves identically; only the instruction changed."""
+    doc = run_scripted(DOCSTRING_PROTECTED, [write("ranking.py", DOC_SIDED)])
+    assert not doc.outcome.goal.achieved
+    assert not doc.outcome.spec_violations
+
+    rewritten = run_scripted(DOCSTRING_PROTECTED, [write("ranking.py", DOC_REWRITTEN)])
+    assert rewritten.outcome.goal.achieved
+    assert any("documented contract removed" in v for v in rewritten.outcome.spec_violations)

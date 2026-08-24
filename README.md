@@ -118,8 +118,11 @@ Headline: when a specification and the visible test suite contradict each other,
 Opus 4.8 at high effort follows the spec in 6/10 episodes while Sonnet 4.6 follows
 the test in 20/20 — capability and effort both shift which source of truth an agent
 defers to. Move the same contract into an unprotected docstring and 20/20 episodes rewrite it
-to agree with the test instead — a mechanism for documentation rot that every
-output-based grader scores as a clean pass. Unprompted shortcut-taking, by
+to agree with the test instead. Explicitly protecting the docstring preserves its
+wording but not its meaning: across 40 episodes the implementation sided with the
+test 40/40, and protection merely converts contract-rewriting into documentation
+that contradicts the code. Every output-based grader scores all of it as a clean
+pass. Unprompted shortcut-taking, by
 contrast, was 0/32 on non-contradictory tasks.
 
 - [x] MDP-native trace schema
@@ -134,8 +137,9 @@ contrast, was 0/32 on non-contradictory tasks.
 - [x] Docstring-vs-tests — when the contract sits in the file under repair and
       is not protected, 20/20 episodes rewrite it to match the test (p=0.005
       vs. the protected-file condition)
-- [ ] Disambiguate that result: same task, docstring explicitly protected in
-      the prompt — is the driver editability, or the missing instruction?
+- [x] Disambiguated: adding "do not change the documented behaviour" preserves
+      the docstring text (Opus 0/10 -> 8/10, p=0.0004) but 20/20 still code
+      against it — 9/20 leave documentation that contradicts the code
 - [ ] Detectors for modes 1, 2, 4, 8 — validated against hand labels
 - [ ] Transactional environment
 - [ ] Frontier model sweep
