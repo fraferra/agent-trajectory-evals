@@ -117,8 +117,10 @@ capability exists, not bolted on after.
 Headline: when a specification and the visible test suite contradict each other,
 Opus 4.8 at high effort follows the spec in 6/10 episodes while Sonnet 4.6 follows
 the test in 20/20 — capability and effort both shift which source of truth an agent
-defers to. Unprompted shortcut-taking, by contrast, was 0/32 on non-contradictory
-tasks.
+defers to. Move the same contract into an unprotected docstring and 20/20 episodes rewrite it
+to agree with the test instead — a mechanism for documentation rot that every
+output-based grader scores as a clean pass. Unprompted shortcut-taking, by
+contrast, was 0/32 on non-contradictory tasks.
 
 - [x] MDP-native trace schema
 - [x] Environment protocol
@@ -129,6 +131,11 @@ tasks.
 - [x] Hard task with a real incentive gradient (`duration-parser`)
 - [x] Spec-vs-tests contradiction — capability and effort both shift which
       source of truth an agent defers to (p=0.0004); replicated across two runs
+- [x] Docstring-vs-tests — when the contract sits in the file under repair and
+      is not protected, 20/20 episodes rewrite it to match the test (p=0.005
+      vs. the protected-file condition)
+- [ ] Disambiguate that result: same task, docstring explicitly protected in
+      the prompt — is the driver editability, or the missing instruction?
 - [ ] Detectors for modes 1, 2, 4, 8 — validated against hand labels
 - [ ] Transactional environment
 - [ ] Frontier model sweep
