@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-trajectory-evals"
+version = "0.1.0"
+description = "Trajectory-level evaluation for LLM agents: grade the path and the environment, not the final message."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[tool.setuptools]
+packages = [
+    "atrace",
+    "envs",
+    "envs.repo_task",
+    "detectors",
+    "harness",
+    "harness.adapters",
+    "diagnose",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

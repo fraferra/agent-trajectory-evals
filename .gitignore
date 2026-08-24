@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Ad-hoc traces and run logs stay local. Curated result sets backing a claim in
+# RESULTS.md are committed deliberately — they are the evidence for it.
+results/*
+!results/.gitkeep
+!results/published/
+!results/sweep/
+
+.env
+*.key
+.DS_Store
