@@ -9,7 +9,6 @@ to something that hides the per-call boundary.
 from __future__ import annotations
 
 from atrace.schema import (
-    ActionResult,
     Outcome,
     RewardVector,
     Step,
@@ -82,16 +81,13 @@ def run_episode(
                         ),
                     ),
                     reward=_reward(env, turn.usage if i == 0 else Usage(), grade_every_step),
+                    # The turn's text belongs to the turn, not to any one call.
+                    # Recorded on the first step only, so parallel calls in the
+                    # same turn do not duplicate it.
+                    assistant_text=turn.text if i == 0 else "",
+                    assistant_thinking=turn.thinking if i == 0 else "",
                 )
             )
-            # The turn's assistant text belongs to the turn, not to any one call.
-            # Attach it to the first step so leakage detection has a target
-            # without double-counting it across parallel calls.
-            if i == 0 and (turn.text or turn.thinking):
-                trace.steps[-1].action_result.output = _tag_channels(
-                    result, turn.text, turn.thinking
-                )
-
             outcomes.append(
                 ToolOutcome(
                     call_id=call.call_id,
@@ -135,18 +131,3 @@ def _reward(env: BaseEnv, usage: Usage, grade_every_step: bool) -> RewardVector:
         invariant_penalty=-float(len(env.check_invariants())),
         cost_penalty=-usage.cost_usd,
     )
-
-
-def _tag_channels(result: ActionResult, text: str, thinking: str) -> str:
-    """Record the user-visible and reasoning channels separately.
-
-    Kept distinct because REASONING_LEAKAGE is defined as reasoning appearing in
-    the user-visible channel; merging them would make the detector unable to
-    tell the two apart.
-    """
-    parts = [result.output] if result.output else []
-    if text:
-        parts.append(f"<assistant_visible>{text}</assistant_visible>")
-    if thinking:
-        parts.append(f"<assistant_thinking>{thinking}</assistant_thinking>")
-    return "\n".join(parts)

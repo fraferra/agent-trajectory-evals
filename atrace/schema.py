@@ -257,6 +257,18 @@ class Step(BaseModel):
     action_result: ActionResult
     next_state: StateSnapshot
     context: ContextFeatures
+
+    assistant_text: str = Field(
+        default="",
+        description="User-visible assistant text from the turn that issued this "
+        "action. Recorded for REASONING_LEAKAGE detection.",
+    )
+    assistant_thinking: str = Field(
+        default="",
+        description="Summarized reasoning from the same turn. Kept separate from "
+        "`assistant_text` so leakage detection can tell the channels apart.",
+    )
+
     reward: RewardVector = Field(default_factory=RewardVector)
     labels: list[FailureLabel] = Field(
         default_factory=list, description="Filled by detectors post hoc, not at record time."

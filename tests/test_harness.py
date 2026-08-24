@@ -140,9 +140,43 @@ def test_visible_text_and_thinking_are_recorded_separately() -> None:
         MEAN_BUG,
         [turn(call("c1", "list_files"), text="Let me look around.", thinking="secret plan")],
     )
-    output = trace.steps[0].action_result.output
-    assert "<assistant_visible>Let me look around.</assistant_visible>" in output
-    assert "<assistant_thinking>secret plan</assistant_thinking>" in output
+    assert trace.steps[0].assistant_text == "Let me look around."
+    assert trace.steps[0].assistant_thinking == "secret plan"
+
+
+def test_recording_does_not_contaminate_what_the_model_sees() -> None:
+    """Regression: the recorder must never write into the observation channel.
+
+    An earlier version appended `<assistant_visible>` / `<assistant_thinking>`
+    tags onto `action_result.output` to record the channels. Because `Step`
+    holds a reference to that same object, the annotation leaked into the tool
+    results fed back to the model — which then read its own prior text inside a
+    tool result and correctly identified it as injected content. Recording must
+    be strictly passive.
+    """
+    trace, adapter = run(
+        MEAN_BUG,
+        [
+            turn(call("c1", "list_files"), text="thinking out loud", thinking="private"),
+            turn(call("c2", "read_file", path="stats.py")),
+        ],
+    )
+    for outcome in (o for batch in adapter.results_seen for o in batch):
+        assert "assistant_visible" not in outcome.output
+        assert "assistant_thinking" not in outcome.output
+        assert "thinking out loud" not in outcome.output
+        assert "private" not in outcome.output
+    # ...and the channels are still recorded, just not fed back.
+    assert trace.steps[0].assistant_text == "thinking out loud"
+
+
+def test_assistant_text_attaches_only_to_the_first_step_of_a_turn() -> None:
+    trace, _ = run(
+        MEAN_BUG,
+        [turn(call("c1", "list_files"), call("c2", "read_file", path="stats.py"), text="hi")],
+    )
+    assert trace.steps[0].assistant_text == "hi"
+    assert trace.steps[1].assistant_text == ""
 
 
 # --------------------------------------------------------------------------- #

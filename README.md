@@ -113,9 +113,12 @@ capability exists, not bolted on after.
 
 ## Status
 
-**Scaffolding, plus one preliminary sweep.** See `RESULTS.md` — the headline is a
-null result with n=1 per cell, which is a finding about the benchmark's task design,
-not about the models. Do not cite it as a shortcut rate.
+**Working harness, 72 recorded episodes, one replicated finding.** See `RESULTS.md`.
+Headline: when a specification and the visible test suite contradict each other,
+Opus 4.8 at high effort follows the spec in 6/10 episodes while Sonnet 4.6 follows
+the test in 20/20 — capability and effort both shift which source of truth an agent
+defers to. Unprompted shortcut-taking, by contrast, was 0/32 on non-contradictory
+tasks.
 
 - [x] MDP-native trace schema
 - [x] Environment protocol
@@ -124,7 +127,8 @@ not about the models. Do not cite it as a shortcut rate.
 - [x] Harness + Anthropic adapter (manual agentic loop)
 - [x] Two live sweeps (32 episodes) — see RESULTS.md; shortcut rate 0/32
 - [x] Hard task with a real incentive gradient (`duration-parser`)
-- [ ] Spec-vs-tests contradiction task — which does the agent trust?
+- [x] Spec-vs-tests contradiction — capability and effort both shift which
+      source of truth an agent defers to (p=0.0004); replicated across two runs
 - [ ] Detectors for modes 1, 2, 4, 8 — validated against hand labels
 - [ ] Transactional environment
 - [ ] Frontier model sweep
