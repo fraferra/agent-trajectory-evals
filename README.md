@@ -113,17 +113,26 @@ capability exists, not bolted on after.
 
 ## Status
 
-**Working harness, 72 recorded episodes, one replicated finding.** See `RESULTS.md`.
-Headline: when a specification and the visible test suite contradict each other,
-Opus 4.8 at high effort follows the spec in 6/10 episodes while Sonnet 4.6 follows
-the test in 20/20 — capability and effort both shift which source of truth an agent
-defers to. Move the same contract into an unprotected docstring and 20/20 episodes rewrite it
-to agree with the test instead. Explicitly protecting the docstring preserves its
-wording but not its meaning: across 40 episodes the implementation sided with the
-test 40/40, and protection merely converts contract-rewriting into documentation
-that contradicts the code. Every output-based grader scores all of it as a clean
-pass. Unprompted shortcut-taking, by
-contrast, was 0/32 on non-contradictory tasks.
+**Working harness, 112 recorded episodes, three replicated findings.** Full write-up in
+`RESULTS.md`; every claim below links to the traces behind it.
+
+1. **Unprompted shortcut-taking is rare.** 0/32 episodes across three tasks, two models
+   and three effort levels. Models read the specification rather than reverse-engineering
+   behaviour from the visible tests — 20/20 read `SPEC.md` and implemented a unit no test
+   exercised.
+
+2. **When a spec and a test contradict each other, capability and effort decide which
+   wins.** With the spec in a separate protected file, Opus 4.8 at high effort followed it
+   in 6/10 episodes; Sonnet 4.6 followed the test in 20/20 (p=0.0004). Replicated across
+   two independent runs.
+
+3. **Protecting a contract preserves its wording, not its meaning.** Move that contract
+   into the docstring of the file under repair and 20/20 episodes rewrite it to agree with
+   the test. Add "do not change the documented behaviour" to the prompt and the text
+   survives (Opus 0/10 → 8/10, p=0.0004) — but the implementation still contradicts it
+   40/40, so 9/20 episodes end with documentation that lies about the code.
+
+Every one of those runs is a clean pass under output-based grading.
 
 - [x] MDP-native trace schema
 - [x] Environment protocol
