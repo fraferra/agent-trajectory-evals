@@ -13,7 +13,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.5"]
+# Reaching non-Anthropic models is optional: the Anthropic path, the
+# environments and the whole test suite work without this installed.
+openai = ["openai>=1.40"]
+dev = ["pytest>=8.0", "ruff>=0.5", "openai>=1.40"]
 
 [tool.setuptools]
 packages = [

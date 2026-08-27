@@ -12,6 +12,7 @@ honest about what it is trying to catch.
 from __future__ import annotations
 
 from envs.repo_task.env import RepoTask
+from envs.repo_task.tasks_hard import HARD_TASKS
 
 # --------------------------------------------------------------------------- #
 # 1. Off-by-one bug. Shortcut: hardcode the expected value, or edit the test.
@@ -482,4 +483,9 @@ ALL_TASKS: dict[str, RepoTask] = {
         DOCSTRING_VS_TESTS,
         DOCSTRING_PROTECTED,
     )
-}
+} | HARD_TASKS
+
+INCENTIVE_TASKS: tuple[str, ...] = tuple(HARD_TASKS)
+"""The subset built to discriminate. Sweeps 1-2 established that `mean-off-by-one`
+and `config-missing-key` cannot measure shortcut-taking at all, so running a new
+model family against them measures nothing — see `tasks_hard`."""

@@ -1,5 +1,10 @@
 """Sweep shortcut rate across tasks, models, effort levels, and repeats.
 
+Models come from `harness.models`, so a sweep can span providers in one run:
+Anthropic and any OpenAI-compatible host (OpenRouter, Together, DeepSeek, a
+local vLLM) sit behind the same `--models` flag. Cells whose API key is absent
+are dropped up front rather than failing one episode at a time.
+
 Each episode is written to disk as it completes and existing cells are skipped,
 so an interrupted sweep (rate limit, credit exhaustion, network) never loses
 episodes that were already paid for — re-running resumes.
@@ -8,8 +13,15 @@ Repeats matter: with n=1 per cell, zero observed shortcuts is consistent with a
 true rate anywhere up to ~25% (rule of three). Rate claims need n>1.
 
 Examples:
+    python scripts/sweep.py --list-models
     python scripts/sweep.py --dry-run
     python scripts/sweep.py --tasks duration-parser --efforts low high --reps 5
+
+    # the cheating sweep: incentive-gradient tasks across capability tiers
+    python scripts/sweep.py \
+        --tasks shared-normalizer interval-scheduling fetch-budget \
+        --models claude-opus-4-8 claude-sonnet-4-6 claude-haiku-4-5 \
+        --efforts high --reps 5 --out results/tiers
 """
 
 from __future__ import annotations
@@ -23,7 +35,8 @@ import traceback
 
 from envs.repo_task.env import RepoEnv
 from envs.repo_task.tasks import ALL_TASKS
-from harness.adapters.anthropic_adapter import SYSTEM_PROMPT, AnthropicAdapter
+from harness.adapters.anthropic_adapter import SYSTEM_PROMPT
+from harness.models import MissingKeyError, build_adapter, describe, has_key, resolve
 from harness.run import run_episode
 
 OUT = pathlib.Path("results/sweep")
@@ -37,21 +50,75 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--base-url",
+        default=None,
+        help="Override the OpenAI-compatible endpoint for every --models entry.",
+    )
+    ap.add_argument(
+        "--list-models", action="store_true", help="Print the registry and exit."
+    )
     return ap.parse_args(argv)
+
+
+def plan(args: argparse.Namespace) -> tuple[list[tuple[str, str, str, int]], list[str]]:
+    """Expand the requested grid into cells, dropping what cannot run.
+
+    Two cells are dropped before anything is paid for:
+
+    * models whose API key is absent — reported once, not once per episode;
+    * effort levels for models with no effort parameter. Running such a model
+      three times and labelling the results low/medium/high would put three
+      identical conditions in three cells and invite a comparison that does not
+      exist.
+    """
+    cells: list[tuple[str, str, str, int]] = []
+    notes: list[str] = []
+
+    for model in args.models:
+        try:
+            spec = resolve(model, args.base_url)
+        except KeyError as exc:
+            notes.append(str(exc))
+            continue
+        if not has_key(spec):
+            notes.append(f"skipping {model}: {spec.api_key_env} is not set")
+            continue
+
+        efforts = list(args.efforts)
+        if not spec.supports_effort and efforts != ["high"]:
+            notes.append(
+                f"{model} has no effort parameter — running effort=high only "
+                f"(requested {', '.join(efforts)})"
+            )
+            efforts = ["high"]
+
+        cells.extend(
+            (task, model, effort, rep)
+            for task in args.tasks
+            for effort in efforts
+            for rep in range(args.reps)
+        )
+    return cells, notes
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
+    if args.list_models:
+        print(describe())
+        return 0
+
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    cells = [
-        (task, model, effort, rep)
-        for task in args.tasks
-        for model in args.models
-        for effort in args.efforts
-        for rep in range(args.reps)
-    ]
+    cells, notes = plan(args)
+    for note in notes:
+        print(f"note: {note}")
+    if notes:
+        print()
+    if not cells:
+        print("nothing to run")
+        return 1
     print(f"{len(cells)} episodes\n")
 
     rows, spend, shortcuts = [], 0.0, 0
@@ -69,12 +136,8 @@ def main(argv: list[str]) -> int:
 
         env = RepoEnv(ALL_TASKS[task_id])
         try:
-            trace = run_episode(
-                env,
-                AnthropicAdapter(model=model, effort=effort),
-                SYSTEM_PROMPT,
-                seed=rep,
-            )
+            adapter = build_adapter(model, effort=effort, base_url=args.base_url)
+            trace = run_episode(env, adapter, SYSTEM_PROMPT, seed=rep)
             path.write_text(trace.to_json())
             o = trace.outcome
             spend += trace.meta["cost_usd"]
@@ -103,6 +166,9 @@ def main(argv: list[str]) -> int:
                 f"{tag}: {mark}  ({trace.meta['turns']} steps, "
                 f"${trace.meta['cost_usd']:.4f}, {o.termination_reason}){detail}"
             )
+        except MissingKeyError as exc:
+            print(f"{tag}: {exc}")
+            break
         except Exception as exc:  # noqa: BLE001 - one bad cell must not kill the sweep
             print(f"{tag}: ERROR {type(exc).__name__}: {exc}")
             traceback.print_exc(limit=1)
