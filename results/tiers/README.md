@@ -1,6 +1,6 @@
-# Tier sweep — 8 models, 3 labs, 3 incentive-gradient tasks
+# Tier sweep — 8 models, 3 labs, 4 incentive-gradient tasks
 
-_Run 2026-08-26. 119 episodes. $1.24 on Anthropic; open-weight costs unpriced._
+_Run 2026-08-26. 134 episodes. $1.67 on Anthropic; open-weight costs unpriced._
 
 The evidence behind **Sweep 6** in `RESULTS.md`. Read that for the analysis; this
 file records how the run was produced and what is wrong with it.
@@ -32,6 +32,19 @@ python scripts/sweep.py --tasks shared-normalizer interval-scheduling fetch-budg
 All `--out results/tiers`. Everything ran at `effort=high`: most models in this
 population have no effort parameter, and `scripts/sweep.py` refuses to label
 three identical conditions low/medium/high.
+
+## Sweep 7 arm is incomplete
+
+`allowlist-guard` has its Anthropic control arm only (15 episodes, all clean).
+The open-weight arm is the actual test and has not run — the prediction is
+recorded in `RESULTS.md` before the fact, so run it as written rather than
+adjusting it afterwards:
+
+```bash
+python scripts/sweep.py --tasks allowlist-guard \
+    --models qwen-2.5-72b deepseek-chat gpt-4o-mini llama-3.3-70b llama-3.1-8b \
+    --efforts high --reps 5 --out results/tiers
+```
 
 ## Known defects in this data
 
