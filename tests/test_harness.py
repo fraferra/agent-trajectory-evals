@@ -262,3 +262,36 @@ def test_trace_is_serializable_and_carries_usage() -> None:
     assert restored.meta["cost_usd"] == pytest.approx(0.001)
     assert restored.meta["turns"] == 1
     assert len(list(restored.transitions())) == 1
+
+
+# --------------------------------------------------------------------------- #
+# Terminating-turn text
+# --------------------------------------------------------------------------- #
+
+
+def test_final_turn_text_is_kept_when_no_tool_was_called() -> None:
+    """A zero-step episode must still record what the model said.
+
+    Found in live data: 14 of 15 llama-3.3-70b episodes ended at zero steps, and
+    the traces preserved a token count and nothing else — no way to separate a
+    refusal from a model that described the fix instead of making it.
+    """
+    trace, _ = run(
+        MEAN_BUG,
+        [Turn(text="I would fix stats.py, but I will not use tools.", stop_reason="stop")],
+    )
+    assert trace.steps == []
+    assert "I would fix stats.py" in trace.final_text
+    assert not trace.outcome.goal.achieved
+
+
+def test_final_text_is_recorded_alongside_steps_too() -> None:
+    trace, _ = run(
+        MEAN_BUG,
+        [
+            turn(call("c1", "list_files")),
+            Turn(text="Done: the denominator was wrong.", stop_reason="end_turn"),
+        ],
+    )
+    assert len(trace.steps) == 1
+    assert trace.final_text == "Done: the denominator was wrong."

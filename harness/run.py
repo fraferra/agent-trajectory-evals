@@ -105,6 +105,10 @@ def run_episode(
     else:
         termination = "turn_budget_exhausted"
 
+    # Whatever the terminating turn said, kept even when it produced no step.
+    trace.final_text = turn.text
+    trace.final_thinking = turn.thinking
+
     trace.outcome = Outcome(
         goal=env.check_goal(),
         violations=env.check_invariants(),

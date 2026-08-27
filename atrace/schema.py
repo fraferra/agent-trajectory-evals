@@ -310,6 +310,24 @@ class Trace(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     steps: list[Step] = Field(default_factory=list)
     outcome: Outcome | None = None
+
+    final_text: str = Field(
+        default="",
+        description="User-visible text from the turn that ended the episode.",
+    )
+    final_thinking: str = Field(
+        default="",
+        description="Reasoning from that same terminating turn.",
+    )
+    """A turn that calls no tool produces no Step, because it is not an MDP
+    transition — and until these fields existed, everything such a turn said was
+    discarded. That is survivable for a model that always acts, and useless for
+    one that does not: a weak model whose episodes end at zero steps leaves a
+    trace containing a token count and nothing else, so 'refused', 'asked a
+    clarifying question', 'described the fix in prose without making it' and
+    'emitted an unparseable tool call' are indistinguishable after the fact.
+    They are different failures and the analysis has to tell them apart."""
+
     labels: list[FailureLabel] = Field(
         default_factory=list, description="Trace-level labels that span no single step."
     )
