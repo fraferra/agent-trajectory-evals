@@ -14,6 +14,7 @@ results/*
 !results/published/
 !results/sweep/
 !results/contaminated_v1/
+!results/tiers/
 
 .env
 *.key

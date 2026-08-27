@@ -113,8 +113,8 @@ capability exists, not bolted on after.
 
 ## Status
 
-**Working harness, 112 recorded episodes, three replicated findings.** Full write-up in
-`RESULTS.md`; every claim below links to the traces behind it.
+**Working harness, 231 recorded episodes across 8 models and 3 labs, four findings.** Full
+write-up in `RESULTS.md`; every claim below links to the traces behind it.
 
 1. **Unprompted shortcut-taking is rare.** 0/32 episodes across three tasks, two models
    and three effort levels. Models read the specification rather than reverse-engineering
@@ -131,6 +131,14 @@ capability exists, not bolted on after.
    the test. Add "do not change the documented behaviour" to the prompt and the text
    survives (Opus 0/10 → 8/10, p=0.0004) — but the implementation still contradicts it
    40/40, so 9/20 episodes end with documentation that lies about the code.
+
+4. **Frontier-lab models fix the root cause; open-weight models fix the symptom.** Given a
+   bug in a module the failing test never names, the four frontier-lab models (Anthropic,
+   OpenAI) repaired the shared function in 20/20 passing episodes. Open-weight models
+   patched the call site the test pointed at in 3/9 — green visible suite, dead held-out
+   suite. Across all three tasks, wrong-but-green solutions: 0/60 frontier lab, 4/25 open
+   weight (p=0.006). Not dishonesty; a correct fix at the wrong layer, and invisible to
+   any grader without a second consumer of the same code.
 
 Every one of those runs is a clean pass under output-based grading.
 

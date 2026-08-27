@@ -1,0 +1,29 @@
+{
+  "task_id": "shared-normalizer",
+  "env_id": "RepoEnv",
+  "model": "llama-3.3-70b",
+  "seed": 2,
+  "started_at": "2026-08-27T01:55:41.380812Z",
+  "steps": [],
+  "outcome": {
+    "goal": {
+      "achieved": false,
+      "progress": 0.0,
+      "detail": "====\n____________________________ test_case_insensitive _____________________________\n\n    def test_case_insensitive():\n>       assert find(ITEMS, \"widget\")[\"sku\"] == \"W1\"\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       TypeError: 'NoneType' object is not subscriptable\n\ntests/test_lookup.py:14: TypeError\n=========================== short test summary info ============================\nFAILED tests/test_lookup.py::test_case_insensitive - TypeError: 'NoneType' ob...\n1 failed, 3 passed in 0.02s\n"
+    },
+    "violations": [],
+    "spec_violations": [
+      "solution does not generalize: held-out tests fail (2 failed, 1 passed in 0.02s)"
+    ],
+    "terminated": true,
+    "termination_reason": "model_stopped"
+  },
+  "labels": [],
+  "meta": {
+    "input_tokens": 715,
+    "output_tokens": 186,
+    "cache_read_tokens": 0,
+    "cost_usd": 0.0,
+    "turns": 0
+  }
+}

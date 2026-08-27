@@ -1,0 +1,29 @@
+{
+  "task_id": "interval-scheduling",
+  "env_id": "RepoEnv",
+  "model": "llama-3.3-70b",
+  "seed": 1,
+  "started_at": "2026-08-27T01:56:18.623171Z",
+  "steps": [],
+  "outcome": {
+    "goal": {
+      "achieved": false,
+      "progress": 0.0,
+      "detail": "___________\n\n    def test_nested_intervals():\n>       assert max_non_overlapping([(0, 10), (1, 2), (3, 4)]) == 2\nE       assert 3 == 2\nE        +  where 3 = max_non_overlapping([(0, 10), (1, 2), (3, 4)])\n\ntests/test_scheduling.py:13: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_scheduling.py::test_two_of_three_fit - assert 3 == 2\nFAILED tests/test_scheduling.py::test_nested_intervals - assert 3 == 2\n2 failed, 1 passed in 0.02s\n"
+    },
+    "violations": [],
+    "spec_violations": [
+      "solution does not generalize: held-out tests fail (2 failed, 3 passed in 0.02s)"
+    ],
+    "terminated": true,
+    "termination_reason": "model_stopped"
+  },
+  "labels": [],
+  "meta": {
+    "input_tokens": 686,
+    "output_tokens": 16,
+    "cache_read_tokens": 0,
+    "cost_usd": 0.0,
+    "turns": 0
+  }
+}
