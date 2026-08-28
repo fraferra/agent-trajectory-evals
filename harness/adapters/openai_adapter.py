@@ -87,6 +87,42 @@ def _parse_args(raw: str | None) -> tuple[dict[str, Any], str | None]:
     return parsed, None
 
 
+REQUIRE_TOOL_SUPPORT: dict[str, Any] = {"provider": {"require_parameters": True}}
+"""OpenRouter routing: only use hosts that accept every parameter sent.
+
+A model slug on OpenRouter is served by several hosts. When one of them ignores
+or mishandles `tools`, requests routed there come back with no content and no
+tool calls, having billed a handful of output tokens — and the next request for
+the same slug may land somewhere that works, so the failure is intermittent and
+looks like the model rather than the routing. This is the documented control for
+it, and it is off by default because it narrows the host pool and can raise
+latency and price.
+"""
+
+
+def _describe_empty(choice: Any, message: Any) -> str:
+    """Compact record of a response that carried neither text nor tool calls.
+
+    Deliberately a string rather than structured data: it is read by a human
+    debugging one episode, not by an analysis pass, and the useful content is
+    whatever non-standard field the provider decided to use — which cannot be
+    known in advance.
+    """
+    parts = [f"finish_reason={getattr(choice, 'finish_reason', None)!r}"]
+    for attr in ("content", "reasoning", "reasoning_content", "refusal",
+                 "function_call", "tool_calls"):
+        value = getattr(message, attr, None)
+        if value:
+            parts.append(f"{attr}={str(value)[:400]!r}")
+    extra = getattr(message, "model_extra", None) or {}
+    for key, value in list(extra.items())[:6]:
+        if value:
+            parts.append(f"extra.{key}={str(value)[:400]!r}")
+    if len(parts) == 1:
+        parts.append("message carried no recognisable field")
+    return " | ".join(parts)
+
+
 class OpenAIAdapter:
     """Turn-taking wrapper around any OpenAI-compatible Chat Completions API."""
 
@@ -101,6 +137,7 @@ class OpenAIAdapter:
         pricing: tuple[float, float] = (0.0, 0.0),
         client: Any | None = None,
         label: str | None = None,
+        extra_body: dict[str, Any] | None = None,
     ) -> None:
         self.api_model = model
         self.model = label or model
@@ -109,6 +146,15 @@ class OpenAIAdapter:
 
         self.effort = effort
         self.supports_effort = supports_effort
+        self.extra_body = extra_body or {}
+        """Passed through to the provider verbatim.
+
+        Exists for OpenRouter's routing controls. OpenRouter load-balances one
+        model slug across several hosts, and they do not all implement tool
+        calling identically, so which host serves a request can decide whether
+        the episode runs at all. `{"provider": {"require_parameters": True}}`
+        restricts routing to hosts that accept every parameter sent — `tools`
+        included. See ROUTING in this module."""
         self.pricing = pricing
         self._messages: list[dict[str, Any]] = []
         self._tools: list[dict[str, Any]] = []
@@ -158,6 +204,8 @@ class OpenAIAdapter:
         }
         if self.supports_effort and self.effort in EFFORT_TO_REASONING:
             kwargs["reasoning_effort"] = EFFORT_TO_REASONING[self.effort]
+        if self.extra_body:
+            kwargs["extra_body"] = self.extra_body
 
         response = self.client.chat.completions.create(**kwargs)
 
@@ -207,6 +255,9 @@ class OpenAIAdapter:
                     ),
                 )
             )
+
+        if not turn.calls and not turn.text:
+            turn.diagnostic = _describe_empty(choice, message)
         return turn
 
     def _account(self, response: Any) -> Usage:

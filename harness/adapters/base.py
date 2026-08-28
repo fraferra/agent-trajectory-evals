@@ -78,6 +78,15 @@ class Turn:
     stop_reason: str = ""
     usage: Usage = field(default_factory=Usage)
 
+    diagnostic: str = ""
+    """Set when a turn yields neither text nor tool calls.
+
+    An empty turn ends the episode, and without this there is nothing to debug
+    from afterwards: the trace shows zero steps and a token count. Populated by
+    the adapter with the provider's own view of what it sent, because the useful
+    question at that point is not what the model meant but what actually
+    arrived."""
+
     @property
     def done(self) -> bool:
         return not self.calls

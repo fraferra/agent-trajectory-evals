@@ -58,6 +58,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     ap.add_argument(
         "--list-models", action="store_true", help="Print the registry and exit."
     )
+    ap.add_argument(
+        "--require-tool-support",
+        action="store_true",
+        help=(
+            "OpenRouter only: route to hosts that accept every parameter sent, "
+            "`tools` included. Use when a model returns empty completions "
+            "intermittently. Recorded per episode, since it changes which hosts "
+            "serve the run."
+        ),
+    )
     return ap.parse_args(argv)
 
 
@@ -136,8 +146,15 @@ def main(argv: list[str]) -> int:
 
         env = RepoEnv(ALL_TASKS[task_id])
         try:
-            adapter = build_adapter(model, effort=effort, base_url=args.base_url)
+            adapter = build_adapter(
+                model,
+                effort=effort,
+                base_url=args.base_url,
+                require_tool_support=args.require_tool_support,
+            )
             trace = run_episode(env, adapter, SYSTEM_PROMPT, seed=rep)
+            if args.require_tool_support:
+                trace.meta["require_tool_support"] = True
             path.write_text(trace.to_json())
             o = trace.outcome
             spend += trace.meta["cost_usd"]

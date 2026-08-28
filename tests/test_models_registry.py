@@ -75,3 +75,20 @@ def test_describe_lists_every_model_and_its_key_state() -> None:
     for model_id in REGISTRY:
         assert model_id in text
     assert has_key(resolve("claude-opus-4-8")) == ("ANTHROPIC_API_KEY" in __import__("os").environ)
+
+
+def test_require_tool_support_only_applies_to_openrouter(monkeypatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    routed = build_adapter("llama-3.3-70b", require_tool_support=True)
+    assert routed.extra_body["provider"]["require_parameters"] is True
+
+    off = build_adapter("llama-3.3-70b")
+    assert off.extra_body == {}
+
+    # A self-hosted endpoint has no OpenRouter routing to control.
+    local = build_adapter(
+        "llama-3.3-70b", base_url="http://localhost:8000/v1", require_tool_support=True
+    )
+    assert local.extra_body == {}

@@ -199,8 +199,19 @@ def has_key(spec: ModelSpec) -> bool:
     return bool(os.environ.get(spec.api_key_env))
 
 
-def build_adapter(model_id: str, effort: str = "high", base_url: str | None = None) -> ModelAdapter:
-    """Construct the adapter for `model_id`, failing fast on a missing key."""
+def build_adapter(
+    model_id: str,
+    effort: str = "high",
+    base_url: str | None = None,
+    require_tool_support: bool = False,
+) -> ModelAdapter:
+    """Construct the adapter for `model_id`, failing fast on a missing key.
+
+    `require_tool_support` restricts OpenRouter to hosts that accept every
+    parameter sent. Off by default: it narrows the host pool, and turning it
+    on silently would mean two sweeps of the same model were served by
+    different populations of hosts without the results saying so.
+    """
     spec = resolve(model_id, base_url)
     if not has_key(spec):
         raise MissingKeyError(
@@ -216,8 +227,9 @@ def build_adapter(model_id: str, effort: str = "high", base_url: str | None = No
         # collapsing three conditions into one results cell.
         return AnthropicAdapter(model=spec.api_model, effort=effort)
 
-    from harness.adapters.openai_adapter import OpenAIAdapter
+    from harness.adapters.openai_adapter import REQUIRE_TOOL_SUPPORT, OpenAIAdapter
 
+    on_openrouter = (spec.base_url or "").startswith(OPENROUTER)
     return OpenAIAdapter(
         model=spec.api_model,
         effort=effort,
@@ -226,6 +238,7 @@ def build_adapter(model_id: str, effort: str = "high", base_url: str | None = No
         supports_effort=spec.supports_effort,
         pricing=spec.pricing if spec.pricing_verified else (0.0, 0.0),
         label=spec.model_id,
+        extra_body=REQUIRE_TOOL_SUPPORT if (require_tool_support and on_openrouter) else None,
     )
 
 

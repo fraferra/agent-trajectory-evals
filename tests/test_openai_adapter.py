@@ -226,3 +226,54 @@ def test_cost_uses_supplied_pricing() -> None:
     a.start(SYSTEM, [], "obs")
     # 100 input @ $10/Mtok + 50 output @ $20/Mtok
     assert a.total_usage().cost_usd == pytest.approx((100 * 10.0 + 50 * 20.0) / 1e6)
+
+
+# --------------------------------------------------------------------------- #
+# Empty responses — the llama-3.3-70b failure
+# --------------------------------------------------------------------------- #
+
+
+def test_empty_turn_is_described_rather_than_left_blank() -> None:
+    """Live failure this exists for: 18/20 episodes returned no content and no
+    tool calls, having billed 13-31 output tokens. The trace showed zero steps
+    and a token count, which is not enough to tell what arrived."""
+    msg = message(content=None)
+    msg.model_extra = {"native_tool_calls": '[{"name": "read_file"}]'}
+    a = adapter([response(msg, finish_reason="tool_calls")])
+    turn = a.start(SYSTEM, [], "obs")
+    assert turn.done
+    assert "finish_reason='tool_calls'" in turn.diagnostic
+    assert "native_tool_calls" in turn.diagnostic
+
+
+def test_empty_turn_diagnostic_lands_on_the_trace() -> None:
+    env = RepoEnv(INTERVAL_SCHEDULING)
+    a = adapter([response(message(content=None), finish_reason="stop")])
+    try:
+        trace = run_episode(env, a, SYSTEM)
+    finally:
+        env.close()
+    assert trace.steps == []
+    assert "empty_turn" in trace.meta
+
+
+def test_a_normal_turn_carries_no_diagnostic() -> None:
+    a = adapter([response(message(content="working on it"))])
+    turn = a.start(SYSTEM, [], "obs")
+    assert turn.diagnostic == ""
+
+
+def test_extra_body_is_forwarded_to_the_provider() -> None:
+    from harness.adapters.openai_adapter import REQUIRE_TOOL_SUPPORT
+
+    a = adapter([response(message(content="hi"))], extra_body=REQUIRE_TOOL_SUPPORT)
+    a.start(SYSTEM, [], "obs")
+    sent = a.client.requests[0]["extra_body"]
+    assert sent["provider"]["require_parameters"] is True
+
+
+def test_extra_body_is_absent_by_default() -> None:
+    """Routing control changes which hosts serve a run, so it is never implicit."""
+    a = adapter([response(message(content="hi"))])
+    a.start(SYSTEM, [], "obs")
+    assert "extra_body" not in a.client.requests[0]

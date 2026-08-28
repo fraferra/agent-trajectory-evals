@@ -125,6 +125,9 @@ def run_episode(
         "cost_usd": round(total.cost_usd, 4),
         "turns": t,
     }
+    if turn.diagnostic:
+        # Set after meta is built, not before: meta is assigned wholesale above.
+        trace.meta["empty_turn"] = turn.diagnostic
     return trace
 
 
